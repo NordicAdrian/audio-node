@@ -1,6 +1,6 @@
 #include <pulse_session.h>
 #include <iostream>
-
+#include <unistd.h>
 
 nnl_audio::PulseSession::PulseSession()
 {
@@ -50,7 +50,6 @@ int nnl_audio::PulseSession::Initialize()
     int elapsed = 0;
     while (true) 
     {
-        std::cout << "Waiting for PulseAudio context to connect..." << std::endl;
         pa_mainloop_iterate(m_mainLoop, 1, nullptr);
         pa_context_state_t state = pa_context_get_state(m_context);
         if (state == PA_CONTEXT_READY) break;
@@ -68,7 +67,7 @@ int nnl_audio::PulseSession::Initialize()
             std::cerr << "PulseAudio context connect timed out." << std::endl;
             return -1;
         }
-        sleep(10);
+        usleep(10);
     }
 
     pa_operation* op = pa_context_get_server_info(m_context, 
@@ -91,7 +90,7 @@ int nnl_audio::PulseSession::Initialize()
             std::cerr << "PulseAudio get_server_info timed out." << std::endl;
             return -1;
         }
-        sleep(10);
+        usleep(10);
     }
     pa_operation_unref(op);
     pa_operation* infoOp = pa_context_get_sink_info_by_name(m_context, m_dev.c_str(),
@@ -114,7 +113,7 @@ int nnl_audio::PulseSession::Initialize()
             pa_operation_unref(infoOp);
             return -1;
         }
-        sleep(10);
+        usleep(10);
     }
     pa_operation_unref(infoOp);
     return 0;
@@ -146,7 +145,7 @@ int nnl_audio::PulseSession::SetVolume(float volume)
             pa_operation_unref(volOp);
             return -1;
         }
-        sleep(10);
+        usleep(10);
     }
     pa_operation_unref(volOp);
     return 0;
