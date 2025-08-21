@@ -2,6 +2,7 @@
 
 
 #include <string>
+#include <memory>
 
 namespace nnl_audio
 {

@@ -1,7 +1,7 @@
 #include <nnl_audio.h>
 #include <pulse_session.h>
 #include <string>
-
+#include <memory>
 
 std::unique_ptr<nnl_audio::PulseSession> audioSession;
 
