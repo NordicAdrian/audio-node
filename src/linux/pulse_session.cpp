@@ -64,21 +64,21 @@ int nnl_audio::PulseSession::SetVolume(float volume)
     {
         return -1;
     }
-    pa_operation* listOp = pa_context_get_sink_info_list(
-    m_context,
-    [](pa_context* c, const pa_sink_info* info, int eol, void* userdata) {
-        if (eol > 0) return;
-        if (info && info->name) {
-            std::cout << "Sink name: " << info->name << std::endl;
-        }
-    },
-    nullptr
-    );
-    while (pa_operation_get_state(listOp) == PA_OPERATION_RUNNING) {
-        pa_mainloop_iterate(m_mainLoop, 1, nullptr);
-    }
-    
-    pa_operation_unref(listOp);
+    // pa_operation* listOp = pa_context_get_sink_info_list(
+    // m_context,
+    // [](pa_context* c, const pa_sink_info* info, int eol, void* userdata) {
+    //     if (eol > 0) return;
+    //     if (info && info->name) {
+    //         std::cout << "Sink name: " << info->name << std::endl;
+    //     }
+    // },
+    // nullptr
+    // );
+    // while (pa_operation_get_state(listOp) == PA_OPERATION_RUNNING) {
+    //     pa_mainloop_iterate(m_mainLoop, 1, nullptr);
+    // }
+
+    // pa_operation_unref(listOp);
     pa_cvolume cvol;
     pa_cvolume_set(&cvol, 2, pa_sw_volume_from_linear(volume)); 
     pa_context_set_sink_volume_by_name(m_context, m_dev.c_str(), &cvol, nullptr, nullptr);
