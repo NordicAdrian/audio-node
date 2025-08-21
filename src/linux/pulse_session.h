@@ -2,8 +2,8 @@
 
 
 #include <pulse/pulseaudio.h>
-
 #include <memory>
+#include <string>
 
 namespace nnl_audio
 {
