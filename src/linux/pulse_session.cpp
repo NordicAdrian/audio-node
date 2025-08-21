@@ -64,7 +64,7 @@ int nnl_audio::PulseSession::SetVolume(float volume)
     }
     pa_cvolume cvol;
     pa_cvolume_set(&cvol, 2, pa_sw_volume_from_linear(volume)); 
-    std::cout << "Setting volume to " << volume << std::endl;
+    std::cout << "Device: " << m_dev << std::endl;
     pa_context_set_sink_volume_by_name(m_context, m_dev.c_str(), &cvol, nullptr, nullptr);
     return 0;
 }
