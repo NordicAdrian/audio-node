@@ -1,5 +1,5 @@
 #include <pulse_session.h>
-
+#include <iostream>
 
 
 nnl_audio::PulseSession::PulseSession()
