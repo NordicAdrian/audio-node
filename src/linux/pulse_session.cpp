@@ -37,7 +37,7 @@ int nnl_audio::PulseSession::Initialize()
         }
     }
 
-    const char* default_sink_name = pa_context_get_server_info(m_context.get(), 
+    pa_operation* op = pa_context_get_server_info(m_context.get(), 
         [] (pa_context* c, const pa_server_info* info, void* userdata) {
             if (info && info->default_sink_name) 
             {
