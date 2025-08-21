@@ -59,7 +59,7 @@ int nnl_audio::PulseSession::Initialize()
             std::cerr << "PulseAudio context connect timed out." << std::endl;
             return -1;
         }
-        Sleep(10);
+        sleep(10);
     }
 
     pa_operation* op = pa_context_get_server_info(m_context, 
@@ -79,7 +79,7 @@ int nnl_audio::PulseSession::Initialize()
             std::cerr << "PulseAudio get_server_info timed out." << std::endl;
             return -1;
         }
-        Sleep(10);
+        sleep(10);
     }
     pa_operation_unref(op);
     pa_operation* infoOp = pa_context_get_sink_info_by_name(m_context, m_dev.c_str(),
@@ -99,7 +99,7 @@ int nnl_audio::PulseSession::Initialize()
             pa_operation_unref(infoOp);
             return -1;
         }
-        Sleep(10);
+        sleep(10);
     }
     pa_operation_unref(infoOp);
     return 0;
@@ -129,7 +129,7 @@ int nnl_audio::PulseSession::SetVolume(float volume)
             pa_operation_unref(volOp);
             return -1;
         }
-        Sleep(10);
+        sleep(10);
     }
     pa_operation_unref(volOp);
     return 0;
