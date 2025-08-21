@@ -61,6 +61,8 @@ int nnl_audio::PulseSession::SetVolume(float volume)
     {
         return -1;
     }
-    pa_context_set_sink_volume_by_name(m_context.get(), m_dev.c_str(), pa_sw_volume_from_linear(volume), nullptr, nullptr);
+    pa_cvolume cvol;
+    pa_cvolume_set(&cvol, 2, pa_sw_volume_from_linear(volume)); 
+    pa_context_set_sink_volume_by_name(m_context.get(), m_dev.c_str(), &cvol, nullptr, nullptr);
     return 0;
 }
