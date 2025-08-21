@@ -31,7 +31,8 @@
               "src/linux"
           ],
           "libraries": [
-            "libpulse"
+              "-lpulse",
+              "-lpulse-simple"
           ]
         }]
       ]
