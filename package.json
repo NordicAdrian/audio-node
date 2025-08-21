@@ -1,11 +1,11 @@
 {
-  "name": "wasapi_node",
+  "name": "nnl_audio_node",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
   "author": "",
   "type": "commonjs",
-  "main": "build/Release/wasapi_node.node",
+  "main": "build/Release/nnl_audio_node.node",
   "scripts": {
     "build": "node-gyp build",
     "install": "node-gyp rebuild --target=25.3.0 --arch=x64 --dist-url=https://electronjs.org/headers",

@@ -15,7 +15,7 @@
 
 
 
-namespace wasapi
+namespace nnl_audio
 {
 
 class DeviceManager : public IMMNotificationClient

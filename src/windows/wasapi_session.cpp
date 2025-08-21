@@ -1,4 +1,4 @@
-#include <audio_session.h>
+#include <wasapi_session.h>
 #include <audioclient.h> // Required for IAudioClient
 #include <iostream>
 
@@ -6,9 +6,9 @@
 
 
 
-winrt::hresult wasapi::AudioSession::Initialize()
+winrt::hresult nnl_audio::WASAPISession::Initialize()
 {
-    winrt::hresult hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    winrt::hresult hr;
     
     winrt::com_ptr<IMMDeviceEnumerator> deviceEnumerator;
     hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(deviceEnumerator.put()));
@@ -21,7 +21,7 @@ winrt::hresult wasapi::AudioSession::Initialize()
     hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, m_device.put());
     if (FAILED(hr))
     {
-        std::cout << "Failed to get default audio endpoint: " << std::endl;
+        std::cout << "Failed to get default nnl_audio endpoint: " << std::endl;
         return hr;
     }
     winrt::com_ptr<IAudioSessionManager2> sessionManager;
@@ -48,7 +48,7 @@ winrt::hresult wasapi::AudioSession::Initialize()
     return S_OK;
 }
 
-winrt::hresult wasapi::AudioSession::SetVolume(float volume)
+winrt::hresult nnl_audio::WASAPISession::SetVolume(float volume)
 {
     for (const auto& [displayName, sessionControl] : m_audioSessionControls)
     {
@@ -58,7 +58,7 @@ winrt::hresult wasapi::AudioSession::SetVolume(float volume)
     return S_OK;
 }
 
-winrt::hresult wasapi::AudioSession::SetVolume(IAudioSessionControl* sessionControl, float volume)
+winrt::hresult nnl_audio::WASAPISession::SetVolume(IAudioSessionControl* sessionControl, float volume)
 {
     winrt::hresult hr;
     winrt::com_ptr<IAudioSessionControl2> sessionControl2;
@@ -84,7 +84,7 @@ winrt::hresult wasapi::AudioSession::SetVolume(IAudioSessionControl* sessionCont
     return S_OK;
 }
 
-winrt::hresult wasapi::AudioSession::FetchAudioControls()
+winrt::hresult nnl_audio::WASAPISession::FetchAudioControls()
 {
     winrt::hresult hr;
     IAudioSessionManager2* sessionManager = m_audioSessionManager->GetAudioSessionManager();
@@ -109,7 +109,7 @@ winrt::hresult wasapi::AudioSession::FetchAudioControls()
         hr = sessionEnumerator->GetSession(i, sessionControl.put());
         if (FAILED(hr))
         {
-            std::cout << "Failed to get audio session: " << std::endl;
+            std::cout << "Failed to get nnl_audio session: " << std::endl;
             continue;
         }
         hr = AddSessionControl(sessionControl.get());
@@ -122,7 +122,7 @@ winrt::hresult wasapi::AudioSession::FetchAudioControls()
     return S_OK;
 }
 
-winrt::hresult wasapi::AudioSession::AddSessionControl(IAudioSessionControl *sessionControl)
+winrt::hresult nnl_audio::WASAPISession::AddSessionControl(IAudioSessionControl *sessionControl)
 {
     winrt::hresult hr;
     LPWSTR displayName;
@@ -138,7 +138,7 @@ winrt::hresult wasapi::AudioSession::AddSessionControl(IAudioSessionControl *ses
         {
             if (m_audioSessionControls.find(displayName) != m_audioSessionControls.end())
             {
-                std::cout << "Audio session disconnected: " << displayName << std::endl;
+                std::cout << "nnl_audio session disconnected: " << displayName << std::endl;
                 m_audioSessionControls.erase(displayName);
             }
         },
@@ -148,7 +148,7 @@ winrt::hresult wasapi::AudioSession::AddSessionControl(IAudioSessionControl *ses
         });
     hr = SetVolume(audioSessionControl->GetAudioSessionControl(), m_volume);
     m_audioSessionControls[displayName] = std::move(audioSessionControl);
-    std::cout << "Audio session added: " << displayName << std::endl;
+    std::cout << "nnl_audio session added: " << displayName << std::endl;
     return S_OK;
 
 }

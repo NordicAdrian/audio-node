@@ -3,9 +3,9 @@
 
 
 
-//https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/Win7Samples/multimedia/audio/CaptureSharedEventDriven/WASAPICapture.cpp
+//https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/Win7Samples/multimedia/nnl_audio/CaptureSharedEventDriven/WASAPICapture.cpp
 
-void wasapi::LoopbackStream::Start(IMMDevice* loopbackDevice, IMMDevice *outputDevice)
+void nnl_audio::LoopbackStream::Start(IMMDevice* loopbackDevice, IMMDevice *outputDevice)
 {
     m_thread.reset(new std::thread([this, loopbackDevice, outputDevice]
     {
@@ -20,14 +20,14 @@ void wasapi::LoopbackStream::Start(IMMDevice* loopbackDevice, IMMDevice *outputD
 
 
 
-void wasapi::LoopbackStream::Wait()
+void nnl_audio::LoopbackStream::Wait()
 {
     std::unique_lock<std::mutex> l(m_mutex);
     m_waitCondition.wait(l);
 }
 
 
-void wasapi::LoopbackStream::Stop()
+void nnl_audio::LoopbackStream::Stop()
 {
     if (m_isRunning)
     {
@@ -48,13 +48,13 @@ void wasapi::LoopbackStream::Stop()
     m_audioSessionRenderControl->UnregisterAudioSessionNotification(this);
 }
 
-void wasapi::LoopbackStream::Pause()
+void nnl_audio::LoopbackStream::Pause()
 {
     std::lock_guard<std::mutex> l(m_mutex);
     m_isPaused = true;
 }
 
-void wasapi::LoopbackStream::Unpause()
+void nnl_audio::LoopbackStream::Unpause()
 {
     {
         std::lock_guard<std::mutex> l(m_mutex);
@@ -63,7 +63,7 @@ void wasapi::LoopbackStream::Unpause()
     m_pauseCondition.notify_one();
 }
 
-winrt::hresult wasapi::LoopbackStream::run(IMMDevice* loopbackDevice, IMMDevice *outputDevice)
+winrt::hresult nnl_audio::LoopbackStream::run(IMMDevice* loopbackDevice, IMMDevice *outputDevice)
 {
 
     
@@ -169,7 +169,7 @@ winrt::hresult wasapi::LoopbackStream::run(IMMDevice* loopbackDevice, IMMDevice 
 }
 
 STDMETHODIMP_(HRESULT __stdcall)
-wasapi::LoopbackStream::OnSessionDisconnected(AudioSessionDisconnectReason DisconnectReason)
+nnl_audio::LoopbackStream::OnSessionDisconnected(AudioSessionDisconnectReason DisconnectReason)
 {
     Stop();
     return S_OK;

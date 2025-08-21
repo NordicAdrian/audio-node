@@ -12,15 +12,15 @@
 #include <device_manager.h>
 #include <map>
 
-namespace wasapi
+namespace nnl_audio
 {
 
 
 
-class AudioSession
+class WASAPISession
 {
 public:
-    AudioSession(IMMDevice* device, float volume = 0.5f) : m_volume(volume) {
+    WASAPISession(IMMDevice* device, float volume = 0.5f) : m_volume(volume) {
         m_device.attach(device);
     }
     winrt::hresult Initialize();

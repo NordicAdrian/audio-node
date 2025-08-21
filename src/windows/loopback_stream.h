@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <winrt/base.h>
 
-namespace wasapi
+namespace nnl_audio
 {
 
 

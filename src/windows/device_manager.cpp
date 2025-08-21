@@ -2,7 +2,7 @@
 
 
 
-winrt::hresult wasapi::DeviceManager::Initialize()
+winrt::hresult nnl_audio::DeviceManager::Initialize()
 {
     winrt::hresult hr;
     hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(m_deviceEnumerator.put()));
@@ -25,7 +25,7 @@ winrt::hresult wasapi::DeviceManager::Initialize()
 
 
 
-std::vector<winrt::com_ptr<IMMDevice>> wasapi::DeviceManager::GetConnectedDevices(EDataFlow dataFlow)
+std::vector<winrt::com_ptr<IMMDevice>> nnl_audio::DeviceManager::GetConnectedDevices(EDataFlow dataFlow)
 {
     std::vector<winrt::com_ptr<IMMDevice>> connectedDevices;
     winrt::com_ptr<IMMDeviceCollection> collection;
@@ -44,7 +44,7 @@ std::vector<winrt::com_ptr<IMMDevice>> wasapi::DeviceManager::GetConnectedDevice
     return connectedDevices;
 }
 
-std::vector<LPCWSTR> wasapi::DeviceManager::GetConnectedDeviceIDs(EDataFlow dataFlow)
+std::vector<LPCWSTR> nnl_audio::DeviceManager::GetConnectedDeviceIDs(EDataFlow dataFlow)
 {
     std::vector<LPCWSTR> deviceIDs;
     std::vector<winrt::com_ptr<IMMDevice>> connectedDevices = GetConnectedDevices(dataFlow);
@@ -63,28 +63,28 @@ std::vector<LPCWSTR> wasapi::DeviceManager::GetConnectedDeviceIDs(EDataFlow data
 
 
 
-IMMDevice* wasapi::DeviceManager::GetDefaultInputDevice()
+IMMDevice* nnl_audio::DeviceManager::GetDefaultInputDevice()
 {
     winrt::com_ptr<IMMDevice> device;
     winrt::check_hresult(m_deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, device.put()));
     return device.get();
 }
 
-IMMDevice* wasapi::DeviceManager::GetDefaultOutputDevice()
+IMMDevice* nnl_audio::DeviceManager::GetDefaultOutputDevice()
 {
     winrt::com_ptr<IMMDevice> device;
     winrt::check_hresult(m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, device.put()));
     return device.get();
 }
 
-IMMDevice* wasapi::DeviceManager::GetDevice(LPCWSTR ID)
+IMMDevice* nnl_audio::DeviceManager::GetDevice(LPCWSTR ID)
 {
     winrt::com_ptr<IMMDevice> device;
     winrt::check_hresult(m_deviceEnumerator->GetDevice(ID, device.put()));
     return device.get();
 }
 
-IMMDevice* wasapi::DeviceManager::GetDevice(const std::string &id)
+IMMDevice* nnl_audio::DeviceManager::GetDevice(const std::string &id)
 {
     for (const auto& device : GetConnectedDevices(eRender))
     {
@@ -97,7 +97,7 @@ IMMDevice* wasapi::DeviceManager::GetDevice(const std::string &id)
     return nullptr;
 }
 
-winrt::hresult wasapi::DeviceManager::GetDeviceIsConnected(LPCWSTR ID, EDataFlow dataFlow)
+winrt::hresult nnl_audio::DeviceManager::GetDeviceIsConnected(LPCWSTR ID, EDataFlow dataFlow)
 {
     std::vector<LPCWSTR> deviceIDs = GetConnectedDeviceIDs(dataFlow);
     for (int i = 0; i < deviceIDs.size(); i++)
@@ -113,7 +113,7 @@ winrt::hresult wasapi::DeviceManager::GetDeviceIsConnected(LPCWSTR ID, EDataFlow
 
 
 
-std::string wasapi::DeviceManager::GetDeviceName(IMMDevice* device)
+std::string nnl_audio::DeviceManager::GetDeviceName(IMMDevice* device)
 {
     winrt::com_ptr<IPropertyStore> propertyStore;
     winrt::check_hresult(device->OpenPropertyStore(STGM_READ, propertyStore.put()));
@@ -130,14 +130,14 @@ std::string wasapi::DeviceManager::GetDeviceName(IMMDevice* device)
     return name;
 }
 
-std::string wasapi::DeviceManager::GetDeviceName(LPCWSTR ID)
+std::string nnl_audio::DeviceManager::GetDeviceName(LPCWSTR ID)
 {
     winrt::com_ptr<IMMDevice> device;
     winrt::check_hresult(m_deviceEnumerator->GetDevice(ID, device.put()));
     return GetDeviceName(device.get());
 }
 
-LPCWSTR wasapi::DeviceManager::GetDeviceID(IMMDevice *device)
+LPCWSTR nnl_audio::DeviceManager::GetDeviceID(IMMDevice *device)
 {
     LPWSTR id;
     winrt::check_hresult(device->GetId(&id));
@@ -145,25 +145,25 @@ LPCWSTR wasapi::DeviceManager::GetDeviceID(IMMDevice *device)
 }
 
 STDMETHODIMP_(HRESULT __stdcall)
-wasapi::DeviceManager::OnDeviceAdded(LPCWSTR pwstrDeviceId)
+nnl_audio::DeviceManager::OnDeviceAdded(LPCWSTR pwstrDeviceId)
 {
     return S_OK;
 }
 
 STDMETHODIMP_(HRESULT __stdcall)
-wasapi::DeviceManager::OnDeviceRemoved(LPCWSTR pwstrDeviceId)
+nnl_audio::DeviceManager::OnDeviceRemoved(LPCWSTR pwstrDeviceId)
 {
     return S_OK;
 }
 
 STDMETHODIMP_(HRESULT __stdcall)
-wasapi::DeviceManager::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
+nnl_audio::DeviceManager::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
 {
     return S_OK;
 }
 
 STDMETHODIMP_(HRESULT __stdcall)
-wasapi::DeviceManager::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
+nnl_audio::DeviceManager::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
 {
     return S_OK;
 }
