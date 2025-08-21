@@ -50,6 +50,7 @@ int nnl_audio::PulseSession::Initialize()
     int elapsed = 0;
     while (true) 
     {
+        std::cout << "Waiting for PulseAudio context to connect..." << std::endl;
         pa_mainloop_iterate(m_mainLoop, 1, nullptr);
         pa_context_state_t state = pa_context_get_state(m_context);
         if (state == PA_CONTEXT_READY) break;
