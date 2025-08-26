@@ -1,33 +1,34 @@
 #include <loopback_stream.h>
 #include <audioclient.h> // Required for IAudioClient
-
+#include <iostream>
 
 
 //https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/Win7Samples/multimedia/nnl_audio/CaptureSharedEventDriven/WASAPICapture.cpp
 
-void nnl_audio::LoopbackStream::Start(IMMDevice* loopbackDevice, IMMDevice *outputDevice)
+winrt::hresult nnl_audio::LoopbackStream::Start(IMMDevice* source, IMMDevice *sink)
 {
-    m_thread.reset(new std::thread([this, loopbackDevice, outputDevice]
+    m_thread.reset(new std::thread([this, source, sink]
     {
         m_isRunning = true;
-        winrt::hresult hr = run(loopbackDevice, outputDevice);
+        winrt::hresult hr = run(source, sink);
         if (FAILED(hr))
         {
-            return;
+            std::cout << "Failed to start loopback stream: " << hr << std::endl;
+            return hr;
         }
     }));
+    return S_OK;
 }
 
-
-
-void nnl_audio::LoopbackStream::Wait()
+winrt::hresult  nnl_audio::LoopbackStream::Wait()
 {
     std::unique_lock<std::mutex> l(m_mutex);
     m_waitCondition.wait(l);
+    return S_OK;
 }
 
 
-void nnl_audio::LoopbackStream::Stop()
+winrt::hresult nnl_audio::LoopbackStream::Stop()
 {
     if (m_isRunning)
     {
@@ -42,28 +43,14 @@ void nnl_audio::LoopbackStream::Stop()
     {
         m_thread->join();
     }
+    std::cout << "Loopback stream stopped." << std::endl;
+    return S_OK;
 
-
-    m_audioSessionCaptureControl->UnregisterAudioSessionNotification(this);
-    m_audioSessionRenderControl->UnregisterAudioSessionNotification(this);
 }
 
-void nnl_audio::LoopbackStream::Pause()
-{
-    std::lock_guard<std::mutex> l(m_mutex);
-    m_isPaused = true;
-}
 
-void nnl_audio::LoopbackStream::Unpause()
-{
-    {
-        std::lock_guard<std::mutex> l(m_mutex);
-        m_isPaused = false;
-    }
-    m_pauseCondition.notify_one();
-}
 
-winrt::hresult nnl_audio::LoopbackStream::run(IMMDevice* loopbackDevice, IMMDevice *outputDevice)
+winrt::hresult nnl_audio::LoopbackStream::run(IMMDevice* source, IMMDevice *sink)
 {
 
     
@@ -77,34 +64,24 @@ winrt::hresult nnl_audio::LoopbackStream::run(IMMDevice* loopbackDevice, IMMDevi
     WAVEFORMATEX *format;
     
 
-    try
-    {
-        winrt::check_hresult(loopbackDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, inputAudioClient.put_void()));
-        winrt::check_hresult(outputDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, outputAudioClient.put_void()));
+    hr = source->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, inputAudioClient.put_void());   if (FAILED(hr)) return hr;
 
-        winrt::check_hresult(outputAudioClient->GetMixFormat(&format));
+    hr = sink->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, outputAudioClient.put_void());    if (FAILED(hr)) return hr;
 
-        winrt::check_hresult(inputAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, 10000000, 0, format, NULL));
-        winrt::check_hresult(outputAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM, 10000000, 0, format, NULL));
+    hr = outputAudioClient->GetMixFormat(&format); if (FAILED(hr)) return hr;
 
-        winrt::check_hresult(inputAudioClient->GetService(__uuidof(IAudioSessionControl), m_audioSessionCaptureControl.put_void()));
-        winrt::check_hresult(outputAudioClient->GetService(__uuidof(IAudioSessionControl), m_audioSessionRenderControl.put_void()));
+    hr = inputAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, 10000000, 0, format, NULL); if (FAILED(hr)) return hr;
+    hr = outputAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM, 10000000, 0, format, NULL); if (FAILED(hr)) return hr;
 
-        winrt::check_hresult(m_audioSessionCaptureControl->RegisterAudioSessionNotification(this));
-        winrt::check_hresult(m_audioSessionRenderControl->RegisterAudioSessionNotification(this));
+    hr = inputAudioClient->GetService(__uuidof(IAudioSessionControl), m_audioSessionCaptureControl.put_void()); if (FAILED(hr)) return hr;
+    hr = outputAudioClient->GetService(__uuidof(IAudioSessionControl), m_audioSessionRenderControl.put_void()); if (FAILED(hr)) return hr;
 
-        winrt::check_hresult(inputAudioClient->GetService(__uuidof(IAudioCaptureClient), captureClient.put_void()));
-        winrt::check_hresult(outputAudioClient->GetService(__uuidof(IAudioRenderClient), renderClient.put_void()));
+    hr = inputAudioClient->GetService(__uuidof(IAudioCaptureClient), captureClient.put_void()); if (FAILED(hr)) return hr;
+    hr = outputAudioClient->GetService(__uuidof(IAudioRenderClient), renderClient.put_void()); if (FAILED(hr)) return hr;
 
-        winrt::check_hresult(inputAudioClient->Start());
-        winrt::check_hresult(outputAudioClient->Start());
+    hr = inputAudioClient->Start(); if (FAILED(hr)) return hr;
+    hr = outputAudioClient->Start(); if (FAILED(hr)) return hr;
 
-    }
-    catch (winrt::hresult_error e)
-    {
-        m_isRunning = false;
-        return e.code();
-    }
     do
     {
         BYTE* captureBuffer;
@@ -127,12 +104,14 @@ winrt::hresult nnl_audio::LoopbackStream::run(IMMDevice* loopbackDevice, IMMDevi
             hr = captureClient->GetBuffer(&captureBuffer, &nFrames, &flags, NULL, NULL);
             if (FAILED(hr))
             {
+                std::cout << "Failed to get capture buffer: " << hr << std::endl;
                 m_isRunning = false;
                 return hr;
             }
             hr = renderClient->GetBuffer(nFrames, &renderBuffer);
             if (FAILED(hr))
             {
+                std::cout << "Failed to get render buffer: " << hr << std::endl;
                 m_isRunning = false;
                 return hr;
             }
@@ -146,12 +125,14 @@ winrt::hresult nnl_audio::LoopbackStream::run(IMMDevice* loopbackDevice, IMMDevi
         hr = captureClient->ReleaseBuffer(nFrames);
         if (FAILED(hr))
         {
+            std::cout << "Failed to release capture buffer: " << hr << std::endl;
             m_isRunning = false;
             return hr;
         }
         hr = renderClient->ReleaseBuffer(nFrames, 0);
         if (FAILED(hr))
         {
+            std::cout << "Failed to release render buffer: " << hr << std::endl;
             m_isRunning = false;
             return hr;
         }
@@ -168,9 +149,3 @@ winrt::hresult nnl_audio::LoopbackStream::run(IMMDevice* loopbackDevice, IMMDevi
     
 }
 
-STDMETHODIMP_(HRESULT __stdcall)
-nnl_audio::LoopbackStream::OnSessionDisconnected(AudioSessionDisconnectReason DisconnectReason)
-{
-    Stop();
-    return S_OK;
-}

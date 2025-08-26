@@ -22,6 +22,18 @@ public:
 
          }
 
+    AudioSessionControl(const AudioSessionControl&) = delete;
+    AudioSessionControl& operator=(const AudioSessionControl&) = delete;
+    AudioSessionControl(AudioSessionControl&&) = delete;
+    AudioSessionControl& operator=(AudioSessionControl&&) = delete;
+    ~AudioSessionControl()
+    {
+        if (m_audioSessionControl)
+        {
+            m_audioSessionControl->UnregisterAudioSessionNotification(this);
+        }
+    }
+
     IAudioSessionControl* GetAudioSessionControl() const
     {
         return m_audioSessionControl.get();

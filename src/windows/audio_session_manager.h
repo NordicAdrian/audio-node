@@ -20,6 +20,17 @@ public:
             m_audioSessionManager->RegisterSessionNotification(this);
         }
 
+    AudioSessionManager(const AudioSessionManager&) = delete;
+    AudioSessionManager& operator=(const AudioSessionManager&) = delete;
+    AudioSessionManager(AudioSessionManager&&) = delete;
+    AudioSessionManager& operator=(AudioSessionManager&&) = delete;
+    ~AudioSessionManager()
+    {
+        if (m_audioSessionManager)
+        {
+            m_audioSessionManager->UnregisterSessionNotification(this);
+        }
+    }
 
     IAudioSessionManager2* GetAudioSessionManager() const
     {

@@ -2,7 +2,7 @@
 
 
 
-winrt::hresult nnl_audio::DeviceManager::Initialize()
+winrt::hresult nnl_audio::DeviceManager::InitializeNotificationClient()
 {
     winrt::hresult hr;
     hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(m_deviceEnumerator.put()));
@@ -18,7 +18,6 @@ winrt::hresult nnl_audio::DeviceManager::Initialize()
         std::cout << "Failed to register endpoint notification callback: " << std::endl;
         return hr;
     }
-
     return S_OK;
 }
 
@@ -70,32 +69,40 @@ IMMDevice* nnl_audio::DeviceManager::GetDefaultInputDevice()
     return device.get();
 }
 
-IMMDevice* nnl_audio::DeviceManager::GetDefaultOutputDevice()
+winrt::hresult nnl_audio::DeviceManager::GetDefaultOutputDevice(winrt::com_ptr<IMMDevice>& device)
 {
-    winrt::com_ptr<IMMDevice> device;
-    winrt::check_hresult(m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, device.put()));
-    return device.get();
+    return m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, device.put());
 }
 
-IMMDevice* nnl_audio::DeviceManager::GetDevice(LPCWSTR ID)
+winrt::hresult nnl_audio::DeviceManager::GetDeviceByID(LPCWSTR ID, winrt::com_ptr<IMMDevice> &device)
 {
-    winrt::com_ptr<IMMDevice> device;
-    winrt::check_hresult(m_deviceEnumerator->GetDevice(ID, device.put()));
-    return device.get();
-}
-
-IMMDevice* nnl_audio::DeviceManager::GetDevice(const std::string &id)
-{
-    for (const auto& device : GetConnectedDevices(eRender))
+    winrt::hresult hr = m_deviceEnumerator->GetDevice(ID, device.put());
+    if (FAILED(hr))
     {
-        std::string deviceId = GetDeviceName(device.get());
-        if (deviceId.compare(id) == 0)
+        std::cout << "Failed to get device by ID: " << std::endl;
+        return hr;
+    }
+    return hr;
+}
+
+
+winrt::hresult nnl_audio::DeviceManager::GetDeviceByName(const std::string &name, winrt::com_ptr<IMMDevice>& device)
+{
+    winrt::hresult hr;
+    for (auto dev : GetConnectedDevices(eRender))
+    {
+        std::string devId;
+        hr = GetDeviceName(dev.get(), devId);
+        if (hr == S_OK && devId.compare(name) == 0)
         {
-            return device.get();
+            device = dev;
+            return S_OK;
         }
     }
-    return nullptr;
+    return E_FAIL;
 }
+
+
 
 winrt::hresult nnl_audio::DeviceManager::GetDeviceIsConnected(LPCWSTR ID, EDataFlow dataFlow)
 {
@@ -113,54 +120,48 @@ winrt::hresult nnl_audio::DeviceManager::GetDeviceIsConnected(LPCWSTR ID, EDataF
 
 
 
-std::string nnl_audio::DeviceManager::GetDeviceName(IMMDevice* device)
+winrt::hresult nnl_audio::DeviceManager::GetDeviceName(IMMDevice* device, std::string& name)
 {
+    winrt::hresult hr;
     winrt::com_ptr<IPropertyStore> propertyStore;
-    winrt::check_hresult(device->OpenPropertyStore(STGM_READ, propertyStore.put()));
-
+    hr = device->OpenPropertyStore(STGM_READ, propertyStore.put());
+    if (FAILED(hr))
+    {
+        return hr;
+    }
     PROPVARIANT friendlyName;
     PropVariantInit(&friendlyName);
 
-    winrt::check_hresult(propertyStore->GetValue(PKEY_Device_FriendlyName, &friendlyName));
+    hr = propertyStore->GetValue(PKEY_Device_FriendlyName, &friendlyName);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
 
     std::wstring wname(friendlyName.pwszVal);
-    std::string name(wname.begin(), wname.end());
+    name = std::string(wname.begin(), wname.end());
 
     PropVariantClear(&friendlyName);
-    return name;
+    return S_OK;
 }
 
-std::string nnl_audio::DeviceManager::GetDeviceName(LPCWSTR ID)
-{
-    winrt::com_ptr<IMMDevice> device;
-    winrt::check_hresult(m_deviceEnumerator->GetDevice(ID, device.put()));
-    return GetDeviceName(device.get());
-}
 
-LPCWSTR nnl_audio::DeviceManager::GetDeviceID(IMMDevice *device)
+winrt::hresult nnl_audio::DeviceManager::GetDeviceID(IMMDevice* device, LPCWSTR& deviceID)
 {
     LPWSTR id;
-    winrt::check_hresult(device->GetId(&id));
-    return id;
-}
-
-STDMETHODIMP_(HRESULT __stdcall)
-nnl_audio::DeviceManager::OnDeviceAdded(LPCWSTR pwstrDeviceId)
-{
+    winrt::hresult hr = device->GetId(&id);
+    if (FAILED(hr))
+    {
+        std::cout << "Failed to get device ID: " << std::endl;
+        return hr;
+    }
+    deviceID = id;
     return S_OK;
 }
 
-STDMETHODIMP_(HRESULT __stdcall)
-nnl_audio::DeviceManager::OnDeviceRemoved(LPCWSTR pwstrDeviceId)
-{
-    return S_OK;
-}
 
-STDMETHODIMP_(HRESULT __stdcall)
-nnl_audio::DeviceManager::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
-{
-    return S_OK;
-}
+
 
 STDMETHODIMP_(HRESULT __stdcall)
 nnl_audio::DeviceManager::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
