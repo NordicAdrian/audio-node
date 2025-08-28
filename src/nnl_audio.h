@@ -5,35 +5,43 @@
 #include <memory>
 #include <vector>
 
+
+
+
+
 namespace nnl_audio
 {
 
+#define REQUIRE_INITIALIZED if (!isInitialized) { std::cerr << "Audio session is not initialized." << std::endl; return -1; }
 /*
-    Set the volume for all audio sessions for the current device session.
+    Initialize the audio session. Must be called before any other calls to the API.
 */
-int SetSessionVolume(float volume);
-
-/*
-    Initialize the audio session for a specific device. If the device is removed the default device is chosen.
-*/
-int InitializeAudioSession(const std::string& deviceId);
+int Initialize();
 
 /*
-    Initialize the audio session for the default device. If the default device changes it will be re-initialized.
+    Set the volume for an audio endpoint identified by the endPointName.
 */
-int InitializeAudioSession();
+int SetEndpointVolume(const std::string& endPointName, float volume);
 
 
-int StartLoopbackStream(const std::string& deviceId);
+/*
+    Start the loopback stream between two audio endpoints.
+*/
+int StartLoopbackStream(const std::string& sourceName, const std::string& sinkName);
 
+/*
+    Stop the loopback stream.
+*/
 int StopLoopbackStream();
 
 
-std::vector<std::string> GetConnectedOutputDevices();
+/*
+    Get a list of all connected output devices.
+*/
+int GetConnectedOutputDevices(std::vector<std::string>& deviceNames);
 
 
-
-
+inline bool isInitialized = false;
 
 } // namespace nnl_audio
 

@@ -18,6 +18,8 @@
 namespace nnl_audio
 {
 
+
+
 class DeviceManager : public IMMNotificationClient
 {
 
@@ -38,12 +40,13 @@ public:
         }
     }
 
-    winrt::hresult InitializeNotificationClient();
+    winrt::hresult Initialize();
+    bool IsInitialized() const { return m_isInitialized; }
 
-    std::vector<winrt::com_ptr<IMMDevice>> GetConnectedDevices(EDataFlow dataFlow);
-    std::vector<LPCWSTR> GetConnectedDeviceIDs(EDataFlow dataFlow);
+    winrt::hresult GetConnectedDevices(EDataFlow dataFlow, std::vector<winrt::com_ptr<IMMDevice>>& devices);
+    winrt::hresult GetConnectedDeviceIDs(EDataFlow dataFlow, std::vector<LPCWSTR>& deviceIDs);
 
-    IMMDevice* GetDefaultInputDevice();
+    winrt::hresult GetDefaultInputDevice(winrt::com_ptr<IMMDevice>& device);
     winrt::hresult GetDefaultOutputDevice(winrt::com_ptr<IMMDevice>& device);
     winrt::hresult GetDeviceByID(LPCWSTR ID, winrt::com_ptr<IMMDevice>& device);
     winrt::hresult GetDeviceByName(const std::string &name, winrt::com_ptr<IMMDevice>& device);
@@ -52,15 +55,20 @@ public:
     winrt::hresult GetDeviceName(IMMDevice* device, std::string& name);
     winrt::hresult GetDeviceID(IMMDevice* device, LPCWSTR& deviceID);
 
+    static winrt::hresult SetDeviceVolume(IMMDevice* device, float volume);
+
+
 protected:
+
+    #define REQUIRE_DEVICE_MANAGER_INITIALIZED() if (!IsInitialized()) { std::cerr << "DeviceManager not initialized\n"; return E_FAIL; }
 
     winrt::com_ptr<IMMDeviceEnumerator> m_deviceEnumerator;
 
     // IMMNotificationClient methods
-    virtual STDMETHOD(OnDeviceAdded)(LPCWSTR pwstrDeviceId) = 0;
-    virtual STDMETHOD(OnDeviceRemoved)(LPCWSTR pwstrDeviceId) = 0;
-    virtual STDMETHOD(OnDefaultDeviceChanged)(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId) = 0;
-    virtual STDMETHOD(OnDeviceStateChanged)(LPCWSTR pwstrDeviceId, DWORD dwNewState) = 0;
+    STDMETHOD(OnDeviceAdded)(LPCWSTR pwstrDeviceId) override {return S_OK; }
+    STDMETHOD(OnDeviceRemoved)(LPCWSTR pwstrDeviceId) override { return S_OK; }
+    STDMETHOD(OnDefaultDeviceChanged)(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId) override { return S_OK; }
+    STDMETHOD(OnDeviceStateChanged)(LPCWSTR pwstrDeviceId, DWORD dwNewState) override { return S_OK; }
 
     STDMETHOD(OnPropertyValueChanged)(LPCWSTR pwstrDeviceId, const PROPERTYKEY key) override { return S_OK; }
     STDMETHOD_(ULONG, AddRef)() override { return InterlockedIncrement(&refCount); }
@@ -86,6 +94,8 @@ protected:
     }
 
     LONG refCount = 1;
+
+    bool m_isInitialized = false;
 
 };
 }

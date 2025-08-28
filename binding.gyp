@@ -8,7 +8,6 @@
           "sources": [
               "src/windows/device_manager.cpp", 
               "src/windows/loopback_stream.cpp", 
-              "src/windows/wasapi_session.cpp",
               "src/windows/nnl_audio.cpp",
               "nnl_audio.cpp" 
             ],

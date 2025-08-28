@@ -1,8 +1,9 @@
 #include <device_manager.h>
+#include <endpointvolume.h>
 
 
 
-winrt::hresult nnl_audio::DeviceManager::InitializeNotificationClient()
+winrt::hresult nnl_audio::DeviceManager::Initialize()
 {
     winrt::hresult hr;
     hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(m_deviceEnumerator.put()));
@@ -18,19 +19,31 @@ winrt::hresult nnl_audio::DeviceManager::InitializeNotificationClient()
         std::cout << "Failed to register endpoint notification callback: " << std::endl;
         return hr;
     }
+    m_isInitialized = true;
     return S_OK;
 }
 
 
 
 
-std::vector<winrt::com_ptr<IMMDevice>> nnl_audio::DeviceManager::GetConnectedDevices(EDataFlow dataFlow)
+winrt::hresult nnl_audio::DeviceManager::GetConnectedDevices(EDataFlow dataFlow, std::vector<winrt::com_ptr<IMMDevice>>& devices)
 {
-    std::vector<winrt::com_ptr<IMMDevice>> connectedDevices;
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
+    winrt::hresult hr;
     winrt::com_ptr<IMMDeviceCollection> collection;
-    winrt::check_hresult(m_deviceEnumerator->EnumAudioEndpoints(dataFlow, DEVICE_STATE_ACTIVE, collection.put()));
+    hr = m_deviceEnumerator->EnumAudioEndpoints(dataFlow, DEVICE_STATE_ACTIVE, collection.put());
+    if (FAILED(hr))
+    {
+        std::cout << "Failed to enumerate audio endpoints: " << std::endl;
+        return hr;
+    }
     UINT count = 0;
-    winrt::check_hresult(collection->GetCount(&count));
+    hr = collection->GetCount(&count);
+    if (FAILED(hr))
+    {
+        std::cout << "Failed to get count of audio endpoints: " << std::endl;
+        return hr;
+    }
     for (UINT i = 0; i < count; ++i)
     {
         winrt::com_ptr<IMMDevice> connectedDevice;
@@ -38,15 +51,22 @@ std::vector<winrt::com_ptr<IMMDevice>> nnl_audio::DeviceManager::GetConnectedDev
         {
             continue;
         }
-        connectedDevices.push_back(connectedDevice);
+        devices.push_back(connectedDevice);
     }
-    return connectedDevices;
+    return S_OK;
 }
 
-std::vector<LPCWSTR> nnl_audio::DeviceManager::GetConnectedDeviceIDs(EDataFlow dataFlow)
+winrt::hresult nnl_audio::DeviceManager::GetConnectedDeviceIDs(EDataFlow dataFlow, std::vector<LPCWSTR>& deviceIDs)
 {
-    std::vector<LPCWSTR> deviceIDs;
-    std::vector<winrt::com_ptr<IMMDevice>> connectedDevices = GetConnectedDevices(dataFlow);
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
+
+    std::vector<winrt::com_ptr<IMMDevice>> connectedDevices;
+    winrt::hresult hr = GetConnectedDevices(dataFlow, connectedDevices);
+    if (FAILED(hr))
+    {
+        std::cout << "Failed to get connected devices: " << std::endl;
+        return hr;
+    }
     for (int i = 0; i < connectedDevices.size(); i++)
     {
         winrt::com_ptr<IMMDevice> device = connectedDevices[i];
@@ -57,25 +77,26 @@ std::vector<LPCWSTR> nnl_audio::DeviceManager::GetConnectedDeviceIDs(EDataFlow d
         }
         deviceIDs.push_back(id);
     }
-    return deviceIDs;
+    return S_OK;
 }
 
 
 
-IMMDevice* nnl_audio::DeviceManager::GetDefaultInputDevice()
+winrt::hresult nnl_audio::DeviceManager::GetDefaultInputDevice(winrt::com_ptr<IMMDevice>& device)
 {
-    winrt::com_ptr<IMMDevice> device;
-    winrt::check_hresult(m_deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, device.put()));
-    return device.get();
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
+    return m_deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, device.put());
 }
 
 winrt::hresult nnl_audio::DeviceManager::GetDefaultOutputDevice(winrt::com_ptr<IMMDevice>& device)
 {
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
     return m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, device.put());
 }
 
 winrt::hresult nnl_audio::DeviceManager::GetDeviceByID(LPCWSTR ID, winrt::com_ptr<IMMDevice> &device)
 {
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
     winrt::hresult hr = m_deviceEnumerator->GetDevice(ID, device.put());
     if (FAILED(hr))
     {
@@ -88,8 +109,16 @@ winrt::hresult nnl_audio::DeviceManager::GetDeviceByID(LPCWSTR ID, winrt::com_pt
 
 winrt::hresult nnl_audio::DeviceManager::GetDeviceByName(const std::string &name, winrt::com_ptr<IMMDevice>& device)
 {
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
     winrt::hresult hr;
-    for (auto dev : GetConnectedDevices(eRender))
+    std::vector<winrt::com_ptr<IMMDevice>> connectedDevices;
+    hr = GetConnectedDevices(eRender, connectedDevices);
+    if (FAILED(hr))
+    {
+        std::cout << "Failed to get connected devices: " << std::endl;
+        return hr;
+    }
+    for (auto dev : connectedDevices)
     {
         std::string devId;
         hr = GetDeviceName(dev.get(), devId);
@@ -99,6 +128,7 @@ winrt::hresult nnl_audio::DeviceManager::GetDeviceByName(const std::string &name
             return S_OK;
         }
     }
+    std::cout << "Failed to get device by name: " << name << std::endl;
     return E_FAIL;
 }
 
@@ -106,7 +136,14 @@ winrt::hresult nnl_audio::DeviceManager::GetDeviceByName(const std::string &name
 
 winrt::hresult nnl_audio::DeviceManager::GetDeviceIsConnected(LPCWSTR ID, EDataFlow dataFlow)
 {
-    std::vector<LPCWSTR> deviceIDs = GetConnectedDeviceIDs(dataFlow);
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
+    std::vector<LPCWSTR> deviceIDs;
+    winrt::hresult hr = GetConnectedDeviceIDs(dataFlow, deviceIDs);
+    if (FAILED(hr))
+    {
+        std::cout << "Failed to get connected device IDs: " << std::endl;
+        return hr;
+    }
     for (int i = 0; i < deviceIDs.size(); i++)
     {
         if (wcscmp(deviceIDs[i], ID) == 0)
@@ -122,6 +159,8 @@ winrt::hresult nnl_audio::DeviceManager::GetDeviceIsConnected(LPCWSTR ID, EDataF
 
 winrt::hresult nnl_audio::DeviceManager::GetDeviceName(IMMDevice* device, std::string& name)
 {
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
+
     winrt::hresult hr;
     winrt::com_ptr<IPropertyStore> propertyStore;
     hr = device->OpenPropertyStore(STGM_READ, propertyStore.put());
@@ -149,6 +188,8 @@ winrt::hresult nnl_audio::DeviceManager::GetDeviceName(IMMDevice* device, std::s
 
 winrt::hresult nnl_audio::DeviceManager::GetDeviceID(IMMDevice* device, LPCWSTR& deviceID)
 {
+    REQUIRE_DEVICE_MANAGER_INITIALIZED();
+
     LPWSTR id;
     winrt::hresult hr = device->GetId(&id);
     if (FAILED(hr))
@@ -160,11 +201,22 @@ winrt::hresult nnl_audio::DeviceManager::GetDeviceID(IMMDevice* device, LPCWSTR&
     return S_OK;
 }
 
-
-
-
-STDMETHODIMP_(HRESULT __stdcall)
-nnl_audio::DeviceManager::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
+winrt::hresult nnl_audio::DeviceManager::SetDeviceVolume(IMMDevice *device, float volume)
 {
+    winrt::hresult hr;
+    winrt::com_ptr<IAudioEndpointVolume> endpointVolume;
+    hr = device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL, NULL, endpointVolume.put_void());
+    if (FAILED(hr))
+    {
+        std::cout << "Failed to activate endpoint volume: " << std::endl;
+        return hr;
+    }
+
+    hr = endpointVolume->SetMasterVolumeLevelScalar(volume, NULL);
+    if (FAILED(hr))
+    {
+        std::cout << "Failed to set device volume: " << std::endl;
+        return hr;
+    }
     return S_OK;
 }

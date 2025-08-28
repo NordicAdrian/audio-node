@@ -1,88 +1,109 @@
 #include <nnl_audio.h>
 #include <winerror.h> 
-#include <wasapi_session.h>
 
 #include <memory>
 #include <winrt/base.h>
+#include <device_manager.h>
+#include <loopback_stream.h>
 
-std::unique_ptr<nnl_audio::WASAPISession> audioSession;
 
+std::unique_ptr<nnl_audio::LoopbackStream> loopbackStream;
+std::unique_ptr<nnl_audio::DeviceManager> deviceManager;
 
-int nnl_audio::InitializeAudioSession(const std::string& deviceId)
+winrt::com_ptr<IMMDevice> sourceDevice;
+winrt::com_ptr<IMMDevice> sinkDevice;
+
+int nnl_audio::SetEndpointVolume(const std::string &endPointName, float volume)
 {
-    winrt::hresult hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-
-    audioSession = std::make_unique<nnl_audio::WASAPISession>();
-    hr = audioSession->Initialize(deviceId);
+    REQUIRE_INITIALIZED;
+    winrt::hresult hr;
+    winrt::com_ptr<IMMDevice> device;
+    hr = deviceManager->GetDeviceByName(endPointName, device);
     if (FAILED(hr))
     {
-        std::cerr << "Failed to initialize audio session: " << std::endl;
+        std::cerr << "Failed to get device by name: " << endPointName << std::endl;
+        return -1;
+    }
+    hr = deviceManager->SetDeviceVolume(device.get(), volume);
+    if (FAILED(hr))
+    {
+        std::cerr << "Failed to set device volume: " << endPointName << std::endl;
         return -1;
     }
     return 0;
 }
 
-int nnl_audio::InitializeAudioSession()
+int nnl_audio::Initialize()
 {
-    return InitializeAudioSession("");
+    winrt::hresult hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    deviceManager = std::make_unique<nnl_audio::DeviceManager>();
+    hr = deviceManager->Initialize();
+    if (FAILED(hr))
+    {
+        isInitialized = false;
+        std::cerr << "Failed to initialize audio session: " << std::endl;
+        return -1;
+    }
+    loopbackStream = std::make_unique<nnl_audio::LoopbackStream>();
+
+    isInitialized = true;
+    return 0;
 }
 
-int nnl_audio::SetSessionVolume(float volume)
-{
-    if (audioSession)
-    {
-        winrt::hresult hr = audioSession->SetAllSessionVolumes(volume);
-        if (SUCCEEDED(hr))
-        {
-            return 0; 
-        }
-    }
-    std::cerr << "Failed to set session volume." << std::endl;
-    return -1; 
-}
 
 
-std::vector<std::string> nnl_audio::GetConnectedOutputDevices()
+
+int nnl_audio::GetConnectedOutputDevices(std::vector<std::string>& deviceNames)
 {
-    if (!audioSession)
+    REQUIRE_INITIALIZED;
+    std::vector<winrt::com_ptr<IMMDevice>> connectedDevices;
+    winrt::hresult hr = deviceManager->GetConnectedDevices(eRender, connectedDevices);
+    if (FAILED(hr))
     {
-        std::cerr << "Audio session not initialized." << std::endl;
-        return {};
+        return -1;
     }
-    std::vector<winrt::com_ptr<IMMDevice>> connectedDevices = audioSession->GetConnectedDevices(eRender);
-    std::vector<std::string> deviceNames;
     for (const auto& device : connectedDevices)
     {
         std::string name;
-        winrt::hresult hr = audioSession->GetDeviceName(device.get(), name);
+        winrt::hresult hr = deviceManager->GetDeviceName(device.get(), name);
         if (SUCCEEDED(hr))
         {
             deviceNames.push_back(name);
         }
     }
-    return deviceNames;
+    return 0;
 }
 
-int nnl_audio::StartLoopbackStream(const std::string &sink)
+int nnl_audio::StartLoopbackStream(const std::string& sourceName, const std::string& sinkName)
 {
-    if (audioSession)
+    REQUIRE_INITIALIZED;
+    winrt::hresult hr = deviceManager->GetDeviceByName(sourceName, sourceDevice);
+    if (FAILED(hr))
     {
-        winrt::hresult hr = audioSession->StartLoopbackStream(sink);
-        if (SUCCEEDED(hr))
-        {
-            return 0;
-        }
+        std::cerr << "Failed to get source device." << std::endl;
+        return -1;
     }
-    std::cerr << "Failed to start loopback stream." << std::endl;
-    return -1;
+    hr = deviceManager->GetDeviceByName(sinkName, sinkDevice);
+    if (FAILED(hr))
+    {
+        std::cerr << "Failed to get sink device." << std::endl;
+        return -1;
+    }
+    loopbackStream->Start(sourceDevice.get(), sinkDevice.get());
+    if (FAILED(hr))
+    {
+        std::cerr << "Failed to start loopback stream." << std::endl;
+        return -1;
+    }
+    return 0;
 }
-
 
 int nnl_audio::StopLoopbackStream()
 {
-    if (audioSession)
+    REQUIRE_INITIALIZED;
+    if (loopbackStream)
     {
-        winrt::hresult hr = audioSession->StopLoopbackStream();
+        winrt::hresult hr = loopbackStream->Stop();
         if (SUCCEEDED(hr))
         {
             return 0;
