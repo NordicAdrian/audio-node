@@ -112,18 +112,7 @@ int nnl_audio::pulse::StartLoopbackStream(std::string& sourceName, const std::st
 
 int nnl_audio::pulse::StopLoopbackStream()
 {
-    if (recordStream) 
-    {
-        pa_stream_disconnect(recordStream);
-        pa_stream_unref(recordStream);
-        recordStream = nullptr;
-    }
-    if (playbackStream) 
-    {
-        pa_stream_disconnect(playbackStream);
-        pa_stream_unref(playbackStream);
-        playbackStream = nullptr;
-    }
+
     return 0;
 }
 
@@ -180,7 +169,7 @@ void nnl_audio::pulse::StartLoopbackCB(pa_context *c, void *userdata)
         return;
     }
 
-    LoopbackData data = static_cast<LoopbackData*>(userdata);
+    LoopbackData* data = static_cast<LoopbackData*>(userdata);
     if (!data)
     {
         std::cerr << "Failed to get loopback data." << std::endl;
