@@ -155,13 +155,13 @@ int nnl_audio::pulse::CreateContext(pa_context **c, pa_mainloop **m)
     pa_context_connect(*c, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
     while (true)
     {
-        pa_context_state_t state = pa_context_get_state(c);
+        pa_context_state_t state = pa_context_get_state(*c);
         if (state == PA_CONTEXT_READY) break;
         if (!PA_CONTEXT_IS_GOOD(state)) {
             std::cerr << "Connection to PulseAudio failed.\n";
             return 1;
         }
-        pa_mainloop_iterate(m, 1, nullptr);
+        pa_mainloop_iterate(*m, 1, nullptr);
     }
     return 0;
 }
