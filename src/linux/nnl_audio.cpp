@@ -1,31 +1,43 @@
 #include <nnl_audio.h>
-#include <pulse_session.h>
 #include <string>
 #include <memory>
+#include <pulse/pulseaudio.h>
+#include <pulse_session.h>
 
-std::unique_ptr<nnl_audio::PulseSession> audioSession;
 
 
-int nnl_audio::InitializeAudioSession(const std::string& deviceId)
+
+
+int nnl_audio::Initialize()
 {
-    InitializeAudioSession();
-    return 0;
+
 }
 
-int nnl_audio::InitializeAudioSession()
+int GetConnectedOutputDevices(std::vector<std::string>& deviceNames)
 {
-    audioSession = std::make_unique<nnl_audio::PulseSession>();
-    audioSession->Initialize();
-    return 0;
+    return pulse::GetConnectedOutputDevices(deviceNames);
 }
 
 
 
-int nnl_audio::SetSessionVolume(float volume)
+int nnl_audio::SetEndpointVolume(const std::string& endPointName, float volume)
 {
-    if (!audioSession) return -1;
-    return audioSession->SetVolume(volume);
+    return pulse::SetEndpointVolume(endPointName, volume);
 }
+
+
+int nnl_audio::StartLoopbackStream(const std::string& sourceName, const std::string& sinkName)
+{
+    return pulse::StartLoopbackStream(sourceName, sinkName);
+}
+
+
+int nnl_audio::StopLoopbackStream()
+{
+    return pulse::StopLoopbackStream();
+}
+
+
 
 
 

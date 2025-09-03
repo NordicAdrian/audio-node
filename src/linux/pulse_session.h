@@ -8,32 +8,33 @@
 namespace nnl_audio
 {
 
-class PulseSession
-{
+
+    namespace pulse
+    {
+
+        constexpr int TIMEOUT_MS = 1000;
+        inline pa_stream* playbackStream = nullptr;
+        inline pa_stream* recordStream = nullptr;
+
+        int SetEndpointVolume(const std::string& endPointName, float volume);
+        int StartLoopbackStream(const std::string& sourceName, const std::string& sinkName);
+        int StopLoopbackStream();
+        int EnsureOperation(pa_operation* op, pa_mainloop* mainLoop, void* userdata, int timeoutMs = TIMEOUT_MS);
 
 
-public:
-    PulseSession();
-    ~PulseSession();
+        int CreateContext(pa_context** c, pa_mainloop** m);
+        void ContextStateCB(pa_context* c, void* userdata);
+        void ReadCB(pa_stream* s, size_t length, void* userdata);
+        void SourceInfoCB(pa_context* c, const pa_source_info* info, int eol, void* userdata);
 
-    // Disable copy and move
-    PulseSession(const PulseSession&) = delete;
-    PulseSession& operator=(const PulseSession&) = delete;
-    PulseSession(PulseSession&&) = delete;
-    PulseSession& operator=(PulseSession&&) = delete;
 
-    int Initialize();
-    int SetVolume(float volume);
 
-private:
-    pa_mainloop* m_mainLoop;
-    pa_context* m_context;
-    std::string m_dev;
-    int m_channelCount = 2; // Default to stereo, will be set from sink info
-    static constexpr int TIMEOUT_MS = 3000; // Timeout for async operations
-};
-
+        int GetChannelCount(const std::string& deviceName, int& channelCount);
+    }
 
 
 }
+
+
+
 
