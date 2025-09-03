@@ -177,6 +177,11 @@ void nnl_audio::pulse::StartLoopbackCB(pa_context *c, void *userdata)
 
     pa_sample_spec ss;
     pa_operation* op = pa_context_get_source_info_by_name(c, static_cast<const char*>(userdata), SourceInfoCB, &ss);
+    pa_mainloop* mainLoop = pa_mainloop_new();
+    if (!mainLoop) {
+        std::cerr << "Failed to create main loop." << std::endl;
+        return;
+    }
     if (EnsureOperation(op, mainLoop) != 0) 
     {
         std::cerr << "Failed to get source info." << std::endl;
