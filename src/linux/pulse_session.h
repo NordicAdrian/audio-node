@@ -13,9 +13,16 @@ namespace nnl_audio
     namespace pulse
     {
 
+        struct LoopbackData {
+            pa_stream* playbackStream = nullptr;
+            pa_stream* recordStream = nullptr;
+            pa_mainloop* mainLoop = nullptr;
+            std::string sourceName;
+            std::string sinkName;
+        };
+
         constexpr int TIMEOUT_MS = 1000;
-        inline pa_stream* playbackStream = nullptr;
-        inline pa_stream* recordStream = nullptr;
+
 
         int SetEndpointVolume(const std::string& endPointName, float volume);
         int StartLoopbackStream(std::string& sourceName, const std::string& sinkName);

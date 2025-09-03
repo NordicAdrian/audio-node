@@ -91,7 +91,12 @@ int nnl_audio::pulse::StartLoopbackStream(std::string& sourceName, const std::st
         return -1;
     }
 
-    pa_context_set_state_callback(context, StartLoopbackCB, &sourceName);
+    LoopbackData* loopbackData = new LoopbackData();
+    loopbackData->sourceName = sourceName;
+    loopbackData->sinkName = sinkName;
+    loopbackData->mainLoop = mainLoop;
+
+    pa_context_set_state_callback(context, StartLoopbackCB, loopbackData);
     int retVal;
     if (pa_mainloop_run(mainLoop, &retVal) < 0) 
     {
@@ -175,30 +180,32 @@ void nnl_audio::pulse::StartLoopbackCB(pa_context *c, void *userdata)
         return;
     }
 
-    pa_sample_spec ss;
-    pa_operation* op = pa_context_get_source_info_by_name(c, static_cast<const char*>(userdata), SourceInfoCB, &ss);
-    pa_mainloop* mainLoop = pa_mainloop_new();
-    if (!mainLoop) {
-        std::cerr << "Failed to create main loop." << std::endl;
+    LoopbackData data = static_cast<LoopbackData*>(userdata);
+    if (!data)
+    {
+        std::cerr << "Failed to get loopback data." << std::endl;
         return;
     }
-    if (EnsureOperation(op, mainLoop) != 0) 
+
+    pa_sample_spec ss;
+    pa_operation* op = pa_context_get_source_info_by_name(c, data.sourceName.c_str(), SourceInfoCB, &ss);
+    if (EnsureOperation(op, data.mainLoop) != 0) 
     {
         std::cerr << "Failed to get source info." << std::endl;
         return;
     }
 
-    recordStream = pa_stream_new(c, "loopback-record", &ss, nullptr);
-    playbackStream = pa_stream_new(c, "loopback-playback", &ss, nullptr);
+    data.recordStream = pa_stream_new(c, "loopback-record", &ss, nullptr);
+    data.playbackStream = pa_stream_new(c, "loopback-playback", &ss, nullptr);
 
-    pa_stream_set_read_callback(recordStream, ReadCB, nullptr);
+    pa_stream_set_read_callback(data.recordStream, ReadLoopbackCB, nullptr);
 
-    if (pa_stream_connect_record(recordStream, sourceName.c_str(), nullptr, PA_STREAM_ADJUST_LATENCY) < 0)
+    if (pa_stream_connect_record(data.recordStream, data.sourceName.c_str(), nullptr, PA_STREAM_ADJUST_LATENCY) < 0)
     {
         std::cerr << "Failed to connect record stream." << std::endl;
         return;
     }
-    if (pa_stream_connect_playback(playbackStream, sinkName.c_str(), nullptr, PA_STREAM_ADJUST_LATENCY) < 0)
+    if (pa_stream_connect_playback(data.playbackStream, data.sinkName.c_str(), nullptr, PA_STREAM_ADJUST_LATENCY) < 0)
     {
         std::cerr << "Failed to connect playback stream." << std::endl;
         return;
@@ -207,14 +214,21 @@ void nnl_audio::pulse::StartLoopbackCB(pa_context *c, void *userdata)
 
 void nnl_audio::pulse::ReadLoopbackCB(pa_stream *s, size_t length, void *userdata)
 {
+    LoopbackData loopbackData = static_cast<LoopbackData*>(userdata);
+    if (!data)
+    {
+        std::cerr << "Failed to get loopback data." << std::endl;
+        return;
+    }
     const void *data;
-    if (pa_stream_peek(s, &data, &length) < 0) {
+    if (pa_stream_peek(s, &data, &length) < 0) 
+    {
         std::cerr << "Failed to read data from source stream." << std::endl;
         return;
     }
-    if (data && length > 0 && playbackStream) 
+    if (data && length > 0 && loopbackData.playbackStream) 
     {
-        pa_stream_write(playbackStream, data, length, nullptr, 0, PA_SEEK_RELATIVE);
+        pa_stream_write(loopbackData.playbackStream, data, length, nullptr, 0, PA_SEEK_RELATIVE);
     }
     pa_stream_drop(s);
 }
