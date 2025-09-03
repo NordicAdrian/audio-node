@@ -15,8 +15,15 @@ int nnl_audio::pulse::SetEndpointVolume(const std::string& endPointName, float v
         return -1;
     }
 
+    int channelCount;
+    if (GetChannelCount(endPointName, channelCount) != 0) 
+    {
+        std::cerr << "Failed to get channel count." << std::endl;
+        return -1;
+    }
+
     pa_cvolume cvol;
-    pa_cvolume_set(&cvol, GetChannelCount(endPointName), pa_sw_volume_from_linear(volume));
+    pa_cvolume_set(&cvol, channelCount, pa_sw_volume_from_linear(volume));
     pa_operation* volOp = pa_context_set_sink_volume_by_name(context, endPointName.c_str(), &cvol, nullptr, nullptr);
     if (EnsureOperation(volOp, mainLoop) != 0) 
     {
@@ -59,7 +66,7 @@ int nnl_audio::pulse::GetConnectedOutputDevices(std::vector<std::string>& device
     };
 
     pa_operation* op = pa_context_get_sink_info_list(context, sinkInfoCallback, &data);
-    if (EnsureOperation(op, mainLoop, &data) != 0) 
+    if (EnsureOperation(op, mainLoop) != 0) 
     {
         std::cerr << "Failed to get sink info list." << std::endl;
         return -1;
@@ -171,7 +178,7 @@ void nnl_audio::pulse::StartLoopbackCB(pa_context *c, void *userdata)
 
     pa_sample_spec ss;
     pa_operation* op = pa_context_get_source_info_by_name(c, static_cast<const char*>(userdata), SourceInfoCB, &ss);
-    if (EnsureOperation(op, mainLoop, &ss) != 0) 
+    if (EnsureOperation(op, mainLoop) != 0) 
     {
         std::cerr << "Failed to get source info." << std::endl;
         return;
@@ -242,7 +249,7 @@ int nnl_audio::pulse::GetChannelCount(const std::string& deviceName, int& channe
     };
 
     pa_operation* op = pa_context_get_sink_info_by_name(context, deviceName.c_str(), sinkInfoCallback, &data);
-    if (EnsureOperation(op, mainLoop, &data) != 0) 
+    if (EnsureOperation(op, mainLoop) != 0) 
     {
         std::cerr << "Failed to get sink info." << std::endl;
         return -1;
