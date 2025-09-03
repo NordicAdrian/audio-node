@@ -92,7 +92,6 @@ int nnl_audio::pulse::StartLoopbackStream(std::string& sourceName, const std::st
     }
 
     pa_context_set_state_callback(context, StartLoopbackCB, &sourceName);
-    if (WaitForContextReady(context, mainLoop) != 0) return -1;
     int retVal;
     if (pa_mainloop_run(mainLoop, &retVal) < 0) 
     {
