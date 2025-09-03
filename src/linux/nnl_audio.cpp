@@ -13,7 +13,7 @@ int nnl_audio::Initialize()
 
 }
 
-int GetConnectedOutputDevices(std::vector<std::string>& deviceNames)
+int nnl_audio::GetConnectedOutputDevices(std::vector<std::string>& deviceNames)
 {
     return pulse::GetConnectedOutputDevices(deviceNames);
 }
