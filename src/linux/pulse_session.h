@@ -18,7 +18,7 @@ namespace nnl_audio
         inline pa_stream* recordStream = nullptr;
 
         int SetEndpointVolume(const std::string& endPointName, float volume);
-        int StartLoopbackStream(const std::string& sourceName, const std::string& sinkName);
+        int StartLoopbackStream(std::string& sourceName, const std::string& sinkName);
         int StopLoopbackStream();
     
 

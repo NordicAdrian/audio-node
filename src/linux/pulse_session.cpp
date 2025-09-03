@@ -81,7 +81,7 @@ int nnl_audio::pulse::GetConnectedOutputDevices(std::vector<std::string>& device
 
 
 
-int nnl_audio::pulse::StartLoopbackStream(const std::string& sourceName, const std::string& sinkName)
+int nnl_audio::pulse::StartLoopbackStream(std::string& sourceName, const std::string& sinkName)
 {
     pa_context* context;
     pa_mainloop* mainLoop;
