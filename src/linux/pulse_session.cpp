@@ -227,8 +227,8 @@ void nnl_audio::pulse::ReadLoopbackCB(pa_stream *s, size_t length, void *userdat
 void nnl_audio::pulse::SourceInfoCB(pa_context *c, const pa_source_info *info, int eol, void *userdata)
 {
     if (eol >0 || !info) return;
-    *pa_sample_spec specOut = static_cast<pa_sample_spec*>(userdata);
-    *specOut = info->sample_spec;   
+    pa_sample_spec* specOut = static_cast<pa_sample_spec*>(userdata);
+    *specOut = info->sample_spec;
 }
 
 int nnl_audio::pulse::GetChannelCount(const std::string& deviceName, int& channelCount)
