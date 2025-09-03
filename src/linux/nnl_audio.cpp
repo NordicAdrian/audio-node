@@ -10,7 +10,7 @@
 
 int nnl_audio::Initialize()
 {
-
+    return 0;
 }
 
 int nnl_audio::GetConnectedOutputDevices(std::vector<std::string>& deviceNames)
@@ -28,7 +28,8 @@ int nnl_audio::SetEndpointVolume(const std::string& endPointName, float volume)
 
 int nnl_audio::StartLoopbackStream(const std::string& sourceName, const std::string& sinkName)
 {
-    return pulse::StartLoopbackStream(sourceName, sinkName);
+    std::string src = sourceName;
+    return pulse::StartLoopbackStream(src, sinkName);
 }
 
 
