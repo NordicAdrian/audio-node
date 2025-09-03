@@ -2,6 +2,7 @@
 
 
 #include <pulse/pulseaudio.h>
+#include <vector>
 #include <memory>
 #include <string>
 
