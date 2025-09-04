@@ -4,7 +4,6 @@
 #include <unistd.h> 
 
 
-
 int nnl_audio::pulse::SetEndpointVolume(const std::string& endPointName, float volume)
 {
     pa_context* context;
@@ -32,7 +31,7 @@ int nnl_audio::pulse::SetEndpointVolume(const std::string& endPointName, float v
     }
 
     pa_context_disconnect(context);
-    pa_context_unref(context);
+    pa_context_unref(context);  
     pa_operation_unref(volOp);
     pa_mainloop_free(mainLoop);
     return 0;
