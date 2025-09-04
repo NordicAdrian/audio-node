@@ -98,6 +98,7 @@ int nnl_audio::pulse::StartLoopbackStream(std::string& sourceName, const std::st
 
     pa_context_set_state_callback(context, StartLoopbackCB, loopbackData);
     int retVal;
+    std::cout << "Starting loopback stream from " << sourceName << " to " << sinkName << std::endl;
     if (pa_mainloop_run(mainLoop, &retVal) < 0) 
     {
         std::cerr << "Failed to run main loop." << std::endl;
