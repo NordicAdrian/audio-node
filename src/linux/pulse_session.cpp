@@ -176,7 +176,7 @@ void nnl_audio::pulse::StartLoopbackCB(pa_context *c, void *userdata)
         return;
     }
 
-    pa_sample_spec ss;
+    pa_sample_spec ss = { PA_SAMPLE_FLOAT32LE, 44100, 2 };
     pa_operation* op = pa_context_get_source_info_by_name(c, data->sourceName.c_str(), SourceInfoCB, &ss);
     if (EnsureOperation(op, data->mainLoop) != 0) 
     {
@@ -187,7 +187,7 @@ void nnl_audio::pulse::StartLoopbackCB(pa_context *c, void *userdata)
     data->recordStream = pa_stream_new(c, "loopback-record", &ss, nullptr);
     data->playbackStream = pa_stream_new(c, "loopback-playback", &ss, nullptr);
 
-    pa_stream_set_read_callback(data->recordStream, ReadLoopbackCB, nullptr);
+    pa_stream_set_read_callback(data->recordStream, ReadLoopbackCB, data);
 
     const char* sourceNameStr = data->sourceName.c_str();
     if (pa_stream_connect_record(data->recordStream, sourceNameStr, nullptr, PA_STREAM_ADJUST_LATENCY) < 0)
