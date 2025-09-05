@@ -18,7 +18,7 @@ int LoopbackStream::Start(const std::string& sourceName, const std::string& sink
         return -1;
     }
 
-    m_sourceName = sourceName;
+    m_sourceName = sourceName + ".monitor"; // Use monitor source for loopback
     m_sinkName = sinkName;
 
     m_mainLoop = pa_mainloop_new();
@@ -110,7 +110,8 @@ int LoopbackStream::Stop()
 
 
 
-void LoopbackStream::StartLoopbackCB(pa_context* c, void* userdata) {
+void LoopbackStream::StartLoopbackCB(pa_context* c, void* userdata) 
+{
     auto* self = static_cast<LoopbackStream*>(userdata);
     if (!self) return;
 
