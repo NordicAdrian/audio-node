@@ -3,6 +3,7 @@
 #include <memory>
 #include <pulse/pulseaudio.h>
 #include <pulse_session.h>
+#include <loopback_stream.h>
 
 
 
