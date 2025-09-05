@@ -16,16 +16,6 @@ int nnl_audio::pulse::LoopbackStream::Start(const std::string &sourceName, const
 
     pa_context_set_state_callback(m_context, StartLoopbackCB, nullptr);
     int retVal;
-    std::cout << "Starting loopback stream from " << sourceName << " to " << sinkName << std::endl;
-    if (pa_mainloop_run(m_mainLoop, &retVal) < 0) 
-    {
-        std::cerr << "Failed to run main loop." << std::endl;
-        return -1;
-    }
-
-
-    pa_context_set_state_callback(m_context, StartLoopbackCB, nullptr);
-    int retVal;
     std::cout << "Starting loopback stream from " << m_sourceName << " to " << m_sinkName << std::endl;
     m_thread = std::make_unique<std::thread>([this, &retVal]() {
         m_isRunning = true;
@@ -35,10 +25,7 @@ int nnl_audio::pulse::LoopbackStream::Start(const std::string &sourceName, const
             return -1;
         }
     });
-
-    pa_context_disconnect(m_context);
-    pa_mainloop_free(m_mainLoop);
-    pa_context_unref(m_context);
+    return 0;
 }
 
 void nnl_audio::pulse::LoopbackStream::StartLoopbackCB(pa_context *c, void *userdata)
@@ -51,7 +38,7 @@ void nnl_audio::pulse::LoopbackStream::StartLoopbackCB(pa_context *c, void *user
     }
 
     pa_operation* op = pa_context_get_source_info_by_name(c, m_sourceName.c_str(), SourceInfoCB, &m_sampleSpec);
-    if (EnsureOperation(op, m_mainLoop) != 0) 
+    if (EnsureOperation(op, m_mainLoop) != 0)
     {
         std::cerr << "Failed to get source info." << std::endl;
         return;
@@ -60,7 +47,7 @@ void nnl_audio::pulse::LoopbackStream::StartLoopbackCB(pa_context *c, void *user
     m_recordStream = pa_stream_new(c, "loopback-record", &m_sampleSpec, nullptr);
     m_playbackStream = pa_stream_new(c, "loopback-playback", &m_sampleSpec, nullptr);
 
-    pa_stream_set_read_callback(m_recordStream, ReadLoopbackCB, this);
+    pa_stream_set_read_callback(m_recordStream, ReadLoopbackCB, nullptr);
 
     const char* sourceNameStr = m_sourceName.c_str();
     if (pa_stream_connect_record(m_recordStream, sourceNameStr, nullptr, PA_STREAM_ADJUST_LATENCY) < 0)
@@ -84,7 +71,7 @@ void nnl_audio::pulse::LoopbackStream::ReadLoopbackCB(pa_stream *s, size_t lengt
         std::cerr << "Failed to read data from source stream." << std::endl;
         return;
     }
-    if (data && length > 0 && m_playbackStream) 
+    if (data && length > 0 && m_playbackStream)
     {
         pa_stream_write(m_playbackStream, data, length, nullptr, 0, PA_SEEK_RELATIVE);
     }
@@ -105,6 +92,24 @@ void nnl_audio::pulse::LoopbackStream::StopCB(int signum)
 
 int nnl_audio::pulse::LoopbackStream::Stop()
 {
+    m_isRunning = false;
+    if (m_mainLoop)
+    {
+        pa_mainloop_quit(m_mainLoop, 0);
+        m_thread->join();
+        m_thread.reset();
+    }
+    if (m_context)
+    {
+        pa_context_disconnect(m_context);
+        pa_context_unref(m_context);
+        m_context = nullptr;
+    }
+    if (m_mainLoop)
+    {
+        pa_mainloop_free(m_mainLoop);
+        m_mainLoop = nullptr;
+    }
     if (m_recordStream)
     {
         pa_stream_disconnect(m_recordStream);
