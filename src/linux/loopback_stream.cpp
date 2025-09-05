@@ -123,11 +123,6 @@ int nnl_audio::pulse::LoopbackStream::Stop()
 
 
 
-bool nnl_audio::LoopbackStream::IsRunning() const
-{
-    return m_isRunning;
-}
-
 
 
 

@@ -27,7 +27,7 @@ namespace pulse
 
         int Start(const std::string& sourceName, const std::string& sinkName);
         int Stop();
-        bool IsRunning() const { return m_isRunning; }
+        bool IsRunning() { return m_isRunning; }
 
 
 
