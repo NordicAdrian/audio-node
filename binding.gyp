@@ -23,6 +23,7 @@
           "sources": [
               "src/linux/nnl_audio.cpp",
               "src/linux/pulse_session.cpp",
+              "src/linux/loopback_stream.cpp",
               "nnl_audio.cpp"
           ],
           "include_dirs": [
