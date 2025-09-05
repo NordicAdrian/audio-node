@@ -85,10 +85,6 @@ void nnl_audio::pulse::LoopbackStream::SourceInfoCB(pa_context *c, const pa_sour
     *specOut = info->sample_spec;
 }
 
-void nnl_audio::pulse::LoopbackStream::StopCB(int signum)
-{
-    m_stopRequested.store(true);
-}
 
 int nnl_audio::pulse::LoopbackStream::Stop()
 {
