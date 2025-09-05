@@ -1,4 +1,5 @@
 #include <loopback_stream.h>
+#include <pulse_session.h>
 #include <pulse/pulseaudio.h>
 
 
